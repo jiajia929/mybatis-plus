@@ -1,6 +1,8 @@
 package com.example.mybatisplus;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.mybatisplus.mapper.UserMapper;
@@ -149,6 +151,27 @@ public class MyBatisPlusWrapperTest {
 
     @Test
     public void test11() {
+        //SELECT uid AS id,user_name AS name,age,email,is_deleted FROM t_user WHERE is_deleted=0 AND (user_name LIKE ? AND age <= ?)
+        String username = "a";
+        Integer ageBegin = null;
+        Integer ageEnd = 30;
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StringUtils.isNotBlank(username), User::getName, username)
+                .ge(ageBegin != null, User::getAge, ageBegin)
+                .le(ageEnd != null, User::getAge, ageEnd);
+        List<User> list = userMapper.selectList(queryWrapper);
+        list.forEach(System.out::println);
+    }
 
+    @Test
+    public void test12() {
+        //将用户名中包含有a并且(年龄大于20或邮箱为null)的用户信息修改
+        //UPDATE t_user SET user_name=?,email=? WHERE is_deleted=0 AND (user_name LIKE ? AND (age > ? OR email IS NULL))
+        LambdaUpdateWrapper<User> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.like(User::getName, "a")
+                .and(i -> i.gt(User::getAge, 20).or().isNull(User::getEmail));
+        updateWrapper.set(User::getName, "小黑").set(User::getEmail, "abc@qq.com");
+        int result = userMapper.update(null, updateWrapper);
+        System.out.println("result：" + result);
     }
 }
